@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1= title
+  p University of Toronto #{title}
+  form(action="/import" method="post" enctype="multipart/form-data")
+    input(type="text" name="title")
+    input(type="file" name="document" multiple="multiple")
+    input(type="submit" onclick="winow.location.href='file.xlsx'")
