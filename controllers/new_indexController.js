@@ -1,10 +1,16 @@
 const asyncHandler = require("express-async-handler");
 const fs = require("fs");
+const path = require("path");
 const multiparty = require("multiparty");
 const { WordsApi, ConvertDocumentRequest } = require("asposewordscloud");
 const xlsx = require("xlsx");
+const { error } = require("console");
 
 var outputFileName;
+
+exports.index_get = asyncHandler(async (req, res, next) => {
+    res.render("index", { title: "FAR/IP Data Extraction Tool" });
+});
 
 exports.index_post = asyncHandler(async (req, res, next) => {
     if (req.url === "/import" && req.method === "POST") {
@@ -182,7 +188,7 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                         outputFileName = fileName.substring(0, fileName.length - 3) + "xlsx";
                         xlsx.writeFile(workbook, outputFileName);
 
-                        res.redirect("/download");
+                        return res.redirect("/download");
                     }
                     else if (filePath.match(/\.docx\b/g)) {
                         var text2;
@@ -294,7 +300,14 @@ exports.index_post = asyncHandler(async (req, res, next) => {
 });
 
 exports.download_get = asyncHandler(async (req, res, next) => {
-    res.download(outputFileName);
+    res.download(outputFileName, (err) => {
+        if (err) { console.error(err); }
+        else {
+            fs.unlink(outputFileName, (error) => {
+                console.error(error);
+            })
+        }
+    });
 });
 
 function processText(raw_text) {
