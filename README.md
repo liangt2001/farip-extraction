@@ -10,7 +10,7 @@ The Data Extraction Tool scrapes off the Final Assessment Report and Implementat
 
 ### Online
 
-A deployed application can be accessed at https://farip-extraction.up.railway.app.
+A deployed application can be accessed at https://farip-extraction.up.railway.app
 
 ### Local
 
@@ -26,11 +26,13 @@ Open `http://localhost:3000` in the browser.
 
 ## Limitations
 
-1. Only files in **.pdf/.docx** format are supported.
-2. The interpreted FAR/IP documents must include the following session headings:
+- Only files in **.pdf/.docx** format are supported.
+- The interpreted FAR/IP documents must include the following session headings:
    - **Current Review: Findings and Recommendations**
-   - **2. Administrative Response & Implementation Plan**
-3. Sub-list items are sometimes missed.
+   - **2. Administrative Response & Implementation Plan** (for full-length documents)
+- Up to **150** file conversions (including bad requests) per month can be made due to limited usage of third-party API.
+- Files with unusual formats (i.e. triangular or square sub-list points) may fail to extract data or miss sub-list items. Try to convert the input document into another acceptable file format before the data extraction.
+- Unsuccessful data extraction will direct to an unreachable webpage. Go back and try the document in another acceptable file format or submit other documents.
 
 ## Author
 

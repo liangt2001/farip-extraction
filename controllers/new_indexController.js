@@ -4,7 +4,6 @@ const path = require("path");
 const multiparty = require("multiparty");
 const { WordsApi, ConvertDocumentRequest } = require("asposewordscloud");
 const xlsx = require("xlsx");
-const { error } = require("console");
 
 var outputFileName;
 
@@ -26,6 +25,12 @@ exports.index_post = asyncHandler(async (req, res, next) => {
             var fileName = files.document[0].originalFilename;
             var filePath = files.document[0].path;
 
+            if (!filePath.match(/\.pdf\b/g) & !filePath.match(/\.docx\b/g)) {
+                console.log(filePath);
+                // alert("File format not supported.");
+                res.redirect("/");
+            }
+
             var request = new ConvertDocumentRequest();
             request.document = fs.createReadStream(filePath);
             request.format = "html";
@@ -35,9 +40,6 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                     result = response.body.toString();
 
                     if (filePath.match(/\.pdf\b/g)) {
-                        console.log(result.search(/Current Review: Findings and Recommendation/gs));
-                        console.log(result.search(/Response &amp; Implementation/g));
-                        // console.log(result);
                         var text2_start = result.search(/Current Review: Findings and Recommendation/gs);
                         var text2 = result.substring(text2_start);
                         if (text2_start == -1) {
@@ -192,103 +194,182 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                     }
                     else if (filePath.match(/\.docx\b/g)) {
                         var text2;
-                        var text2_start1 = result.search(/Findings &amp; Recommendations/gs);
-                        var text2_start2 = result.search(/FINDINGS AND RECOMMENDATION/gs);
-                        if (text2_start1 != -1 & text2_start2 == -1) {
+                        var text2_start1 = result.search(/Current Review: Findings &amp; Recommendations/gs);
+                        var text2_start2 = result.search(/Current Review: Findings and Recommendations/gs);
+                        var text2_start3 = result.search(/FINDINGS AND RECOMMENDATION/gs);
+                        if (text2_start1 != -1) {
                             text2 = result.substring(text2_start1);
-                        } else if (text2_start2 != -1 & text2_start1 == -1) {
+                        } else if (text2_start2 != -1) {
                             text2 = result.substring(text2_start2);
+                        } else if (text2_start3 != -1) {
+                            text2 = result.substring(text2_start3);
                         } else {
                             console.error("Ambiguous start point");
                         }
                         var temp2 = text2;
-                        console.log(result);
-                        var n_rows = (text2.match(/<\/span><\/li>/gm) || []).length - 2;
-                        var check_next_p = false;
-                        var check_next_li = false;
-                        var arr = new Array(n_rows);
-                        for (var i = 0; i < arr.length; i++) {
-                            arr[i] = new Array(5);
-                        }
-
+                        var arr = new Array();
                         var i = -1;
                         var j = 0;
+                        console.log(text2_start1)
+                        console.log(text2_start2)
+                        console.log(text2_start3)
+                        console.log(temp2);
 
                         while (temp2.indexOf("<") >= 0) {
-
                             if (temp2.indexOf("<ol") == 0) {
                                 i += 1;
                                 j = 0;
-                                var str = temp2.substring(temp2.indexOf("<span"));
-                                str = str.substring(str.indexOf(">") + 1, str.indexOf("</span>"));
-                                arr[i][j] = str;
-
-                                temp2 = temp2.substring(temp2.indexOf("</ol>") + 1);
-                                check_next_p = false;
-                            } else if (temp2.indexOf("<p") == 0) {
-                                var line = temp2.substring(0, temp2.indexOf("</p>"));
-                                if (line.includes("strengths")) {
-                                    if (check_next_p) {
-                                        i += 1;
-                                        arr[i][j - 1] = arr[i - 1][j - 1];
-                                    }
-                                    check_next_p = true;
-                                    j = 1;
-                                    arr[i][j] = "Strengths";
-                                }
-                                else if (line.includes("areas of concern")) {
-                                    if (check_next_p) {
-                                        i += 1;
-                                        arr[i][j - 1] = arr[i - 1][j - 1];
-                                    }
-                                    j = 1;
-                                    arr[i][j] = "Areas of concern";
-                                }
-                                else if (line.includes("recommendations")) {
-                                    if (check_next_p) {
-                                        i += 1;
-                                        arr[i][j - 1] = arr[i - 1][j - 1];
-                                    }
-                                    j = 1;
-                                    arr[i][j] = "Recommendations";
-                                }
-                                temp2 = temp2.substring(temp2.indexOf("</p>") + 1);
-                            } else if (temp2.indexOf("<ul") == 0) {
-                                check_next_li = false;
-                                temp2 = temp2.substring(1);
-                            } else if (temp2.indexOf("<li") == 0) {
-                                if (check_next_li) {
-                                    i += 1;
-                                    for (var temp_j = 0; temp_j < j; temp_j++) {
-                                        arr[i][temp_j] = arr[i - 1][temp_j];
-                                    }
+                                var raw_text = temp2.substring(0, temp2.indexOf("</ol>"));
+                                var val = processText(raw_text);
+                                arr.push(new Array(5));
+                                arr[i][j] = val;
+                                temp2 = temp2.substring(temp2.indexOf("</ol>"));
+                            } 
+                            else if (temp2.indexOf("<h") == 0) {
+                                var raw_text = temp2.substring(0, temp2.indexOf("</h"));
+                                if (!raw_text.includes(`<span style="font-family:'Lucida Bright'`)) {
+                                    temp2 = temp2.indexOf("</h");
                                 } else {
-                                    j += 1;
+                                    i += 1;
+                                    j = 0;
+                                    arr.push(new Array(5));
+                                    var val = processText(raw_text);
+                                    arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                    temp2 = temp2.substring(temp2.indexOf("</h"));
                                 }
-
-                                var str = temp2.substring(temp2.indexOf("<span"), temp2.indexOf("</span>"));
-                                str = str.substring(str.indexOf(">") + 1);
-                                arr[i][j] = str;
-
-                                var end = temp2.substring(temp2.indexOf("</span"));
-                                check_next_li = end.indexOf("</span><ul>") != 0;
-
-                                temp2 = temp2.substring(temp2.indexOf("</span>") + 1);
-                            } else if (temp2.indexOf("</ul>") == 0) {
-                                j -= 1;
-                                temp2 = temp2.substring(1);
-                            } else {
-                                temp2 = temp2.substring(1);
                             }
+                            else if (temp2.indexOf("<p") == 0) {
+                                var raw_text = temp2.substring(0, temp2.indexOf("</p>"));
+                                var val = processText(raw_text);
+                                var is_sar = (val.search(/following.+?strengths/g) != -1) | (val.search(/following.+?areas of concern/g) != -1) | (val.search(/following.+?recommendation/g) != -1);
+                                var is_review_item = (val.includes("1. Undergraduate Program") | val.includes("2. Graduate Program") | val.includes("3. Faculty/Research") | val.includes("4. Administration"));
+                                console.log("val = " + val);
+                                if (is_review_item) {
+                                    i += 1;
+                                    j = 0;
+                                    arr.push(new Array(5));
+                                    if (val.includes("(")) {
+                                        arr[i][j] = val.substring(0, val.indexOf("(")).replaceAll(/[0-9.]/g,"").trim();
+                                    } else {
+                                        arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                    }
+                                    
+                                }
+                                else if (is_sar == 1) {
+                                    if (j >= 1) {
+                                        i += 1;
+                                        arr.push(new Array(5));
+                                        arr = copyFromAbove(arr, i, 1);
+                                    }
+                                    j = 1;
+                                    if (val.includes("strength")) {
+                                        arr[i][j] = "Strengths";
+                                    }
+                                    else if (val.includes("areas of concern")) {
+                                        arr[i][j] = "Areas of Concern";
+                                    }
+                                    else if (val.includes("recommendation")) {
+                                        arr[i][j] = "Recommendations";
+                                    }
+                                }
+                                else if (val[0] == "") {
+                                    if (j >= 2) {
+                                        i += 1;
+                                        arr.push(new Array(5));
+                                        arr = copyFromAbove(arr, i, 2);
+                                    }
+                                    j = 2;
+                                    arr[i][j] = val.substring(1).trim();
+                                }
+                                else if (val[0] == "o") {
+                                    if (j >= 3) {
+                                        i += 1;
+                                        arr.push(new Array(5));
+                                        arr = copyFromAbove(arr, i, 3);
+                                    }
+                                    j = 3;
+                                    arr[i][j] = val.substring(1).trim();
+                                }
+                                else if (val[0] == "") {
+                                    if (j >= 4) {
+                                        i += 1;
+                                        arr.push(new Array(5));
+                                        arr = copyFromAbove(arr, i, 4);
+                                    }
+                                    j = 4;
+                                    arr[i][j] = val.substring(1).trim();
+                                }
+                                temp2 = temp2.substring(temp2.indexOf("</p>"));
+                                if (val == "") next;
+                            }
+                            else if (temp2.indexOf('<ul type="circle') == 0) {
+                                var raw_text = temp2.substring(0, temp2.indexOf("</li>"));
+                                var val = processText(raw_text);
+                                if (j >= 3) {
+                                    i += 1;
+                                    arr.push(new Array(5));
+                                    arr = copyFromAbove(arr, i, 3);
+                                }
+                                j = 3;
+                                arr[i][j] = val;
+                                if (temp2.indexOf("<li", temp2.indexOf("</li>")) != -1) {
+                                    temp2 = temp2.substring(Math.min(temp2.indexOf("</ul>"), temp2.indexOf("<li", temp2.indexOf("</li>")) - 1));
+                                } else {
+                                    temp2 = temp2.substring(temp2.indexOf("</ul>"));
+                                }
+                            }
+                            else if (temp2.indexOf('<ul type="disc') == 0) {
+                                console.log("detected disc");
+                                var raw_text;
+                                if (temp2.indexOf('<ul type="circle') != -1) {
+                                    raw_text = temp2.substring(0, Math.min(temp2.indexOf('<ul type="circle'), temp2.indexOf("</li>")));
+                                } else {
+                                    raw_text = temp2.substring(0, temp2.indexOf("</li>"));
+                                }
+                                console.log("raw = " + raw_text);
+                                var val = processText(raw_text);
+                                console.log(val);
+                                if (j >= 2) {
+                                    i += 1;
+                                    arr.push(new Array(5));
+                                    arr = copyFromAbove(arr, i, 2);
+                                }
+                                j = 2;
+                                arr[i][j] = val;
+                                if (temp2.indexOf('<ul type="circle') != -1) {
+                                    temp2 = temp2.substring(Math.min(temp2.indexOf('<ul type="circle') - 1, temp2.indexOf("</li>")));
+                                } else {
+                                    temp2 = temp2.substring(temp2.indexOf("</li>"));
+                                }
+                            }
+                            else if (temp2.indexOf("<li") == 0) {
+                                var raw_text = temp2.substring(0, temp2.indexOf("</li>"));
+                                var val = processText(raw_text);
+                                i += 1;
+                                arr.push(new Array(5));
+                                arr = copyFromAbove(arr, i, j);
+                                arr[i][j] = val;
+                                temp2 = temp2.substring(temp2.indexOf("</li>"));
+                            }
+
+                            if (val == "ADMINISTRATIVE RESPONSE – Appended" | typeof(temp2) != "string" | temp2.indexOf("<div") == 0) {
+                                console.log("breakkkkk!")
+                                break;
+                            }
+                            temp2 = temp2.substring(1);
                             temp2 = temp2.substring(temp2.indexOf("<"));
+                            console.log(temp2.substring(0, 20));
                         }
                         console.log(arr);
 
-                        var workbook = XLSX.utils.book_new();
-                        var worksheet = XLSX.utils.aoa_to_sheet(arr);
-                        workbook.SheetNames.push("First");
-                        workbook.Sheets["First"] = worksheet;
-                        XLSX.writeFile(workbook, "demo.xlsx");
+                        var workbook = xlsx.utils.book_new();
+                        var worksheet = xlsx.utils.aoa_to_sheet(arr);
+                        workbook.SheetNames.push("Main");
+                        workbook.Sheets["Main"] = worksheet;
+                        outputFileName = fileName.substring(0, fileName.length - 4) + "xlsx";
+                        xlsx.writeFile(workbook, outputFileName);
+
+                        return res.redirect("/download");
                     }
                 })
                 .catch((err) => {
