@@ -143,15 +143,15 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                     j = 3;
                                     arr[i][j] = val.substring(1).trim();
                                 }
-                                else {
-                                    console.error(val);
-                                    return res.render("error",
-                                        {
-                                            title: "Extraction Failed",
-                                            message1: "Error: characters cannot be identified",
-                                            message2: "This file may contain illegal characters. Please go back and submit the file in another acceptable format"
-                                        });
-                                }
+                                // else {
+                                //     console.error("val = " + val);
+                                //     return res.render("error",
+                                //         {
+                                //             title: "Extraction Failed",
+                                //             message1: "Error: characters cannot be identified",
+                                //             message2: "This file may contain illegal characters. Please go back and submit the file in another acceptable format"
+                                //         });
+                                // }
                                 temp2 = temp2.substring(temp2.indexOf("</p>"));
                             }
                             else if (temp2.indexOf('<ul type="square"') == 0) {
@@ -386,7 +386,7 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                 temp2 = temp2.substring(temp2.indexOf("</li>"));
                             }
 
-                            if (val == "Administrative response—appended" | val == "ADMINISTRATIVE RESPONSE – Appended" | typeof (temp2) != "string" | temp2.indexOf("<div") == 0) {
+                            if (val == "Administrative response—appended" | val == "ADMINISTRATIVE RESPONSE – Appended" | typeof (temp2) != "string") {
                                 console.log("breakkkkk!")
                                 break;
                             }
