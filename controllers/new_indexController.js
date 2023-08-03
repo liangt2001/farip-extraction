@@ -17,8 +17,8 @@ exports.index_post = asyncHandler(async (req, res, next) => {
         var form = new multiparty.Form();
         form.parse(req, function (err, fields, files) {
 
-            const clientID = "59611537-80f3-4efd-85e2-30be22ac2e9d";
-            const secret = "184c09e6e580ae01ea5ae83e7fa3bd08";
+            const clientID = "ae9136a2-f5a9-47e8-b2ed-682e16cfaf3a";
+            const secret = "335c530ecfac6965943ba418b4643313";
             const wordsAPI = new WordsApi(clientID, secret);
 
             console.log(files.document[0]);
@@ -44,11 +44,23 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                         var text2 = result.substring(text2_start);
                         if (text2_start == -1) {
                             console.error("Cannot trim the text");
+                            return res.render("error",
+                                {
+                                    title: "Extraction Failed",
+                                    message1: "Error: the submitted file does not include the required headings",
+                                    message2: "Please go back and submit another file"
+                                });
                         }
                         var text2_end_1 = text2.search(/Response &amp; Implementation/g);
                         var text2_end_2 = text2.indexOf("<img");
                         if (text2_end_1 == -1 & text2_end_2 == -1) {
                             console.error("Cannot trim the text");
+                            return res.render("error",
+                                {
+                                    title: "Extraction Failed",
+                                    message1: "Error: the submitted file does not include the required headings",
+                                    message2: "Please go back and submit another file"
+                                });
                         } else if (text2_end_1 == -1) {
                             text2 = text2.substring(0, text2_end_2);
                         } else if (text2_end_2 == -1) {
@@ -79,7 +91,7 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                 var raw_text = temp2.substring(0, temp2.indexOf("</h"));
                                 var val = processText(raw_text);
                                 arr.push(new Array(5));
-                                arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                arr[i][j] = val.replaceAll(/[0-9.]/g, "").trim();
                                 temp2 = temp2.substring(temp2.indexOf("</h"));
                             }
                             else if (temp2.indexOf("<p") == 0) {
@@ -89,7 +101,7 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                     var raw_text = temp2.substring(0, temp2.indexOf("</p>"));
                                     var val = processText(raw_text);
                                     arr.push(new Array(5));
-                                    arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                    arr[i][j] = val.replaceAll(/[0-9.]/g, "").trim();
                                     temp2 = temp2.substring(temp2.indexOf("</p>"));
                                     continue;
                                 }
@@ -133,6 +145,12 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                 }
                                 else {
                                     console.error(val);
+                                    return res.render("error",
+                                        {
+                                            title: "Extraction Failed",
+                                            message1: "Error: characters cannot be identified",
+                                            message2: "This file may contain illegal characters. Please go back and submit the file in another acceptable format"
+                                        });
                                 }
                                 temp2 = temp2.substring(temp2.indexOf("</p>"));
                             }
@@ -205,6 +223,12 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                             text2 = result.substring(text2_start3);
                         } else {
                             console.error("Ambiguous start point");
+                            return res.render("error",
+                                {
+                                    title: "Extraction Failed",
+                                    message1: "Error: the submitted file does not include the required headings",
+                                    message2: "Please go back and submit another file"
+                                });
                         }
                         var temp2 = text2;
                         var arr = new Array();
@@ -224,7 +248,7 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                 arr.push(new Array(5));
                                 arr[i][j] = val;
                                 temp2 = temp2.substring(temp2.indexOf("</ol>"));
-                            } 
+                            }
                             else if (temp2.indexOf("<h") == 0) {
                                 var raw_text = temp2.substring(0, temp2.indexOf("</h"));
                                 if (!raw_text.includes(`<span style="font-family:'Lucida Bright'`)) {
@@ -234,26 +258,32 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                     j = 0;
                                     arr.push(new Array(5));
                                     var val = processText(raw_text);
-                                    arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                    arr[i][j] = val.replaceAll(/[0-9.]/g, "").trim();
                                     temp2 = temp2.substring(temp2.indexOf("</h"));
                                 }
                             }
                             else if (temp2.indexOf("<p") == 0) {
+                                console.log(temp2.substring(0, 100));
                                 var raw_text = temp2.substring(0, temp2.indexOf("</p>"));
+                                console.log("raw = " + raw_text);
                                 var val = processText(raw_text);
                                 var is_sar = (val.search(/following.+?strengths/g) != -1) | (val.search(/following.+?areas of concern/g) != -1) | (val.search(/following.+?recommendation/g) != -1);
                                 var is_review_item = (val.includes("1. Undergraduate Program") | val.includes("2. Graduate Program") | val.includes("3. Faculty/Research") | val.includes("4. Administration"));
                                 console.log("val = " + val);
+                                if (val == "Administrative response—appended" | val == "ADMINISTRATIVE RESPONSE – Appended" | typeof (temp2) != "string" | temp2.indexOf("<div") == 0) {
+                                    console.log("breakkkkk!")
+                                    break;
+                                }
                                 if (is_review_item) {
                                     i += 1;
                                     j = 0;
                                     arr.push(new Array(5));
                                     if (val.includes("(")) {
-                                        arr[i][j] = val.substring(0, val.indexOf("(")).replaceAll(/[0-9.]/g,"").trim();
+                                        arr[i][j] = val.substring(0, val.indexOf("(")).replaceAll(/[0-9.]/g, "").trim();
                                     } else {
-                                        arr[i][j] = val.replaceAll(/[0-9.]/g,"").trim();
+                                        arr[i][j] = val.replaceAll(/[0-9.]/g, "").trim();
                                     }
-                                    
+
                                 }
                                 else if (is_sar == 1) {
                                     if (j >= 1) {
@@ -298,6 +328,10 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                     }
                                     j = 4;
                                     arr[i][j] = val.substring(1).trim();
+                                }
+                                else {
+                                    temp2 = temp2.substring(1);
+                                    next;
                                 }
                                 temp2 = temp2.substring(temp2.indexOf("</p>"));
                                 if (val == "") next;
@@ -352,13 +386,13 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                                 temp2 = temp2.substring(temp2.indexOf("</li>"));
                             }
 
-                            if (val == "ADMINISTRATIVE RESPONSE – Appended" | typeof(temp2) != "string" | temp2.indexOf("<div") == 0) {
+                            if (val == "Administrative response—appended" | val == "ADMINISTRATIVE RESPONSE – Appended" | typeof (temp2) != "string" | temp2.indexOf("<div") == 0) {
                                 console.log("breakkkkk!")
                                 break;
                             }
                             temp2 = temp2.substring(1);
                             temp2 = temp2.substring(temp2.indexOf("<"));
-                            console.log(temp2.substring(0, 20));
+                            console.log(temp2.substring(0, 100));
                         }
                         console.log(arr);
 
@@ -374,6 +408,12 @@ exports.index_post = asyncHandler(async (req, res, next) => {
                 })
                 .catch((err) => {
                     console.error(err);
+                    return res.render("error",
+                        {
+                            title: "Extraction Failed",
+                            message1: "Error: an unidentified error occurs during the conversion",
+                            message2: "Please go back and submit another file"
+                        });
                 })
             // res.redirect("/download");
         })
@@ -382,10 +422,24 @@ exports.index_post = asyncHandler(async (req, res, next) => {
 
 exports.download_get = asyncHandler(async (req, res, next) => {
     res.download(outputFileName, (err) => {
-        if (err) { console.error(err); }
+        if (err) {
+            console.error(err);
+            return res.render("error",
+                {
+                    title: "Extraction Failed",
+                    message1: "Error: an unidentified error occurs during the conversion",
+                    message2: "Please go back and submit another file"
+                });
+        }
         else {
             fs.unlink(outputFileName, (error) => {
                 console.error(error);
+                return res.render("error",
+                    {
+                        title: "Extraction Failed",
+                        message1: "Error: an unidentified error occurs during the conversion",
+                        message2: "Please go back and submit another file"
+                    });
             })
         }
     });
@@ -393,9 +447,9 @@ exports.download_get = asyncHandler(async (req, res, next) => {
 
 function processText(raw_text) {
     var result = "";
-    while (raw_text.indexOf("<span") >= 0) {
+    while (raw_text.search(/<span.*?>[^<]/g) >= 0) {
         var str_start = raw_text.search(/>[^<]/g) + 1;
-        var str_end = raw_text.indexOf("</span>", str_start)
+        var str_end = raw_text.indexOf("</span>", str_start);
         var str = raw_text.substring(str_start, str_end);
         result += str;
         raw_text = raw_text.substring(str_end);
@@ -407,7 +461,12 @@ function processText(raw_text) {
 function copyFromAbove(arr, i, j) {
     if (!(arr[i][j - 1] == null) | i - 1 < 0) {
         console.error("Tried copyFromAbove but already filled or no above");
-        return;
+        return res.render("error",
+            {
+                title: "Extraction Failed",
+                message1: "Error: an unidentified error occurs during the conversion",
+                message2: "Please go back and submit another file"
+            });
     }
     for (var temp_j = 0; temp_j < j; temp_j++) {
         arr[i][temp_j] = arr[i - 1][temp_j];

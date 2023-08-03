@@ -2,18 +2,20 @@ extends layout
 
 block content
   main
-    h1= title
-    p University of Toronto #{title}
-    p For the full documentation, visit 
-      a(href="https://github.com/liangt2001/farip-extraction") here
+    
     div(class="mb-1")
       form(action="/import" method="post" enctype="multipart/form-data")
         div(class="col-2")
           div(class="container")
-            input(class="btn btn-primary" type="file" name="document" aria-describedby="fileHelpInline")
-            span(id="fileHelpInline" class="form-text") Files in .pdf/.docx format
+            div(class="row")
+              div(class="col-12")
+                input(class="form-control" type="file" name="document" accept=".docx, .pdf" aria-describedby="fileHelpInline")
+              div(class="col-12")
+                span(id="fileHelpInline" class="form-text") Files in .pdf/.docx format only
           div(class="container")
             input(class="btn btn-primary" type="submit")
+    
+
   nav(class="navbar fixed-bottom navbar-light justify-content-end")
       div(class="row")
         div(class="col d-flex justify-content-end text-right")
