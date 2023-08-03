@@ -4,7 +4,7 @@
 
 This application is for the use of the Office of Academic Programs, University of Toronto. 
 
-The Data Extraction Tool scrapes off the Final Assessment Report and Implementation Plan documents (FAR/IPs) and outputs the review items in a .xlsx file for analysis purposes. 
+The Data Extraction Tool scrapes the Final Assessment Report and Implementation Plan documents (FAR/IPs) and outputs the review items in .xlsx files for analysis purposes. 
 
 ## Usage
 
@@ -29,10 +29,20 @@ Open `http://localhost:3000` in the browser.
 - Only files in **.pdf/.docx** format are supported.
 - The interpreted FAR/IP documents must include the following session headings:
    - **Current Review: Findings and Recommendations**
-   - **2. Administrative Response & Implementation Plan** (for full-length documents)
+   - **2. Administrative Response & Implementation Plan** (for full-length pdf documents)
 - Up to **150** file conversions (including bad requests) per month can be made due to limited usage of third-party API.
-- Files with unusual formats (i.e. triangular or square sub-list points) may fail to extract data or miss sub-list items. Try to convert the input document into another acceptable file format before the data extraction.
-- Unsuccessful data extraction will direct to an unreachable webpage. Go back and try the document in another acceptable file format or submit other documents.
+- Files with unusual formats (i.e. triangular or square sub-list points) may fail to extract data or miss sub-list items. Try converting the input document into another acceptable format before the data extraction.
+- Unsuccessful data extraction will direct to an error page. Follow the indicated instructions and proceed.
+
+## Milestones
+
+1. Plan and design the application
+2. Implement the foundational functionality: scrape the .docx FAR/IPs
+3. Develop to support the .pdf documents
+4. Create error pages for unsuccessful extractions
+5. Deploy the application online with a user-friendly UI
+6. Develop documentation and instructions
+7. Debug to ensure robustness
 
 ## Author
 
